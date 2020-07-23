@@ -1,10 +1,10 @@
-# Third Light Backend Coding Challenge
+# **REDACTED** Backend Coding Challenge
 
 ## Purpose
 
 The purpose of this exercise is to produce a body of work that can be evaluated, reviewed and discussed as a practical part of our job interview process.
 
-The code will be compiled, evaluated and code reviewed by members of the Third Light development team before the interview and a semi-formal code review will make-up at least part of the first interview.
+The code will be compiled, evaluated and code reviewed by members of the **REDACTED** development team before the interview and a semi-formal code review will make-up at least part of the first interview.
 
 While the goal of the exercise is to have a fairly substantial piece of code to evaluate and discuss in an interview, the task itself is intended to show your ability to build a microservice, so we will be looking at how you structure your code, incorporating things like logging, configuration and error handling.
 
@@ -57,11 +57,11 @@ No client is required – the JSON data will be queried and displayed directly i
 
 ## Timekeeping
 
-You will be given an agreed length of time to complete the task after a quick discussion with Third Light. We are hoping that this is a task that can be completed in a few evenings in a week. We will not be judging you on your ability, or keenness, to work in your spare time so we will look to find a suitable timeline for you to find those hours.
+You will be given an agreed length of time to complete the task after a quick discussion with **REDACTED**. We are hoping that this is a task that can be completed in a few evenings in a week. We will not be judging you on your ability, or keenness, to work in your spare time so we will look to find a suitable timeline for you to find those hours.
 
 ## Keeping in Touch
 
-This is not an exam so you do not have to complete the task in isolation or silence, and we actively encourage you to get in touch to discuss ideas or technical designs before spending a lot of time implementing them. Software engineering is a team effort, not done in a vacuum, and part of that is making use of the expertise of other team members. You will have access to a Slack channel with a developer from Third Light to discuss with.
+This is not an exam so you do not have to complete the task in isolation or silence, and we actively encourage you to get in touch to discuss ideas or technical designs before spending a lot of time implementing them. Software engineering is a team effort, not done in a vacuum, and part of that is making use of the expertise of other team members. You will have access to a Slack channel with a developer from **REDACTED** to discuss with.
 
 ## Notes
 
