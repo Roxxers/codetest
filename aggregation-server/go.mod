@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/gin-gonic/gin v1.6.3
+	github.com/prometheus/common v0.10.0
 	thirdlight.com/watcher-node v0.0.0-00010101000000-000000000000
 )
 
