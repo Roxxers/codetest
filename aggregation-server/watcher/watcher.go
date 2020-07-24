@@ -2,8 +2,8 @@ package watcher
 
 import (
 	"fmt"
-	"log"
 	"net/url"
+	"sync"
 
 	"thirdlight.com/aggregation-server/types"
 	"thirdlight.com/watcher-node/lib"
@@ -20,10 +20,12 @@ type Watcher struct {
 // Nodes is a helper class for dealing with the list of registered nodes
 type Nodes struct {
 	List []*Watcher
+	mux  sync.Mutex
 }
 
+// CreateNodesList creates the a new wrapper class for the list of nodes available to this server
 func CreateNodesList() *Nodes {
-	return &Nodes{[]*Watcher{}}
+	return &Nodes{List: []*Watcher{}}
 }
 
 func (n *Nodes) Find(instanceID string) (*Watcher, error) {
@@ -43,10 +45,9 @@ func (n *Nodes) New(instanceID string, address string, port uint) (*Watcher, err
 	}
 
 	w := &Watcher{instanceID, *url, port, &types.FileList{}}
+	n.mux.Lock()
 	n.List = append(n.List, w)
-
-	log.Printf("Found and added node: %s @ %s", w.Instance, &w.URL)
-
+	n.mux.Unlock()
 	return w, nil
 }
 
