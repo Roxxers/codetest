@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/prometheus/common/log"
+	log "github.com/sirupsen/logrus"
 	"thirdlight.com/aggregation-server/watcher"
 	"thirdlight.com/watcher-node/lib"
 )
@@ -39,7 +39,7 @@ func registerNode(c *gin.Context) {
 		if err != nil {
 			log.Error(err)
 		}
-		log.Infof("Created new node: %s", node.Instance)
+		log.Infof("Registered new node: %s", node.Instance)
 		c.Status(200)
 		return
 	}
