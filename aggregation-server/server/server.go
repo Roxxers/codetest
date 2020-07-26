@@ -43,11 +43,26 @@ func SetupRouter() *gin.Engine {
 				log.Error(err)
 			}
 			log.Infof("Created new node: %s", node.Instance)
+			c.Status(200)
+			return
 		}
+		log.Debugf("Seen already registered node: %s", intro.Instance)
+		c.Status(200)
+		return
+	})
 
-		fmt.Println(nodes.List)
-
-		c.JSON(200, intro)
+	r.POST("/bye", func(c *gin.Context) {
+		var bye lib.ByeOperation
+		c.BindJSON(&bye)
+		if err := nodes.Remove(bye.Instance); err != nil {
+			// Error means node doesn't exist
+			log.Debugln(err)
+			c.Status(404)
+			return
+		}
+		log.Infof("Successfully removed node from registered nodes: %s", bye.Instance)
+		c.Status(200)
+		return
 	})
 
 	return r
