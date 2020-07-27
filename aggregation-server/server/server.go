@@ -25,7 +25,8 @@ func parseRemoteAddr(addr string) string {
 }
 
 func getFiles(c *gin.Context) {
-	c.JSON(200, map[string]string{"hello": "world"})
+
+	c.JSON(200, nodes.FetchAllFiles())
 }
 
 // registerNode is the endpoint for registering a watcher node with this server

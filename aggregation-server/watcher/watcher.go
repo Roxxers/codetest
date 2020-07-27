@@ -104,6 +104,19 @@ func (n *Nodes) Remove(instanceID string) error {
 	return fmt.Errorf("no node with instance ID: %s", instanceID)
 }
 
+func (n *Nodes) FetchAllFiles() map[string][]lib.FileMetadata {
+	defer n.mux.RUnlock()
+	n.mux.RLock()
+	// make is used here due to needing the base map to != nil to reference the files key
+	files := make(map[string][]lib.FileMetadata)
+	files["files"] = make([]lib.FileMetadata, 0)
+
+	for _, watcher := range n.List {
+		files["files"] = append(files["files"], watcher.List...)
+	}
+	return files
+}
+
 // CreateNodesList creates the a new wrapper class for the list of nodes available to this server
 func CreateNodesList() *Nodes {
 	return &Nodes{List: []*Watcher{}}
