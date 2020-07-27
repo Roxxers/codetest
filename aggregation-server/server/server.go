@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
+	endpoints "thirdlight.com/aggregation-server/lib"
 	"thirdlight.com/aggregation-server/watcher"
 	"thirdlight.com/watcher-node/lib"
 )
@@ -67,9 +68,9 @@ func deregisterNode(c *gin.Context) {
 func SetupRouter() *gin.Engine {
 	r := gin.Default()
 
-	r.GET("/files", getFiles)
-	r.POST("/hello", registerNode)
-	r.POST("/bye", deregisterNode)
+	r.GET(endpoints.FilesEndpoint, getFiles)
+	r.POST(endpoints.HelloEndpoint, registerNode)
+	r.POST(endpoints.ByeEndpoint, deregisterNode)
 
 	return r
 }

@@ -1,11 +1,14 @@
 package watcher
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"sync"
+	"time"
 
-	"thirdlight.com/aggregation-server/types"
+	endpoints "thirdlight.com/aggregation-server/lib"
 	"thirdlight.com/watcher-node/lib"
 )
 
@@ -14,11 +17,39 @@ type Watcher struct {
 	Instance string
 	URL      url.URL
 	Port     uint
-	List     *types.FileList
+	List     []lib.FileMetadata
+	SeqNo    int
+	mux      sync.RWMutex
 }
 
 func (w *Watcher) PatchList(patch lib.PatchOperation) error {
 	// Code here
+	return nil
+}
+
+// ReqFiles requests the current file list for the node, and updates the internal list of files.
+func (w *Watcher) ReqFiles() error {
+	// Get file list
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s%s", w.URL.String(), endpoints.FilesEndpoint), nil)
+	if err != nil {
+		return fmt.Errorf("Error creating request for URL: %s\n%s", w.URL.String(), err)
+	}
+	client := &http.Client{Timeout: time.Second * 20}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("Failed to request files from node on initialsation: %s\n%s", w.URL.String(), err)
+	}
+	defer resp.Body.Close()
+
+	var files lib.ListResponse
+	if err := json.NewDecoder(resp.Body).Decode(&files); err != nil {
+		return fmt.Errorf("Failed to parse file list of instance: %s @ %s\n%s", w.Instance, w.URL.String(), err)
+	}
+
+	defer w.mux.Unlock()
+	w.mux.Lock()
+	w.List = files.Files
+	w.SeqNo = files.Sequence
 	return nil
 }
 
@@ -41,13 +72,16 @@ func (n *Nodes) Find(instanceID string) (*Watcher, error) {
 }
 
 func (n *Nodes) New(instanceID string, address string, port uint) (*Watcher, error) {
-	url, err := url.Parse(address)
+	// Formatted like this because the url lib does not like normal ip addresses, but is just fine with domains
+	// https://github.com/golang/go/issues/19297
+	// A solution that works with both and https would be in prod but this works for now on a local machine
+	url, err := url.Parse(fmt.Sprintf("http://%s:%d", address, port))
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: Add actually getting the full file list here
-	w := &Watcher{instanceID, *url, port, &types.FileList{}}
+	w := &Watcher{Instance: instanceID, URL: *url, Port: port}
+	w.ReqFiles()
 	n.mux.Lock()
 	n.List = append(n.List, w)
 	n.mux.Unlock()
