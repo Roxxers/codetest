@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	endpoints "thirdlight.com/aggregation-server/lib"
 	"thirdlight.com/watcher-node/lib"
 )
@@ -59,6 +60,7 @@ type Nodes struct {
 	mux  sync.RWMutex
 }
 
+// Find node in internal node list using instanceID
 func (n *Nodes) Find(instanceID string) (*Watcher, error) {
 	defer n.mux.RUnlock()
 	n.mux.RLock()
@@ -67,27 +69,33 @@ func (n *Nodes) Find(instanceID string) (*Watcher, error) {
 			return watcher, nil
 		}
 	}
-	// No matches
+	// No matches, return error
 	return nil, fmt.Errorf("no node with instance ID: %s", instanceID)
 }
 
-func (n *Nodes) New(instanceID string, address string, port uint) (*Watcher, error) {
+// New creates a new node and adds it to the list of nodes
+// Checks if node already exists are done outside of this function for now
+// Could be something to update in future?
+func (n *Nodes) New(instanceID string, address string, port uint) error {
 	// Formatted like this because the url lib does not like normal ip addresses, but is just fine with domains
 	// https://github.com/golang/go/issues/19297
 	// A solution that works with both and https would be in prod but this works for now on a local machine
 	url, err := url.Parse(fmt.Sprintf("http://%s:%d", address, port))
 	if err != nil {
-		return nil, err
+		log.Error(err)
+		return err
 	}
 
 	w := &Watcher{Instance: instanceID, URL: *url, Port: port}
 	w.ReqFiles()
+	defer n.mux.Unlock()
 	n.mux.Lock()
 	n.List = append(n.List, w)
-	n.mux.Unlock()
-	return w, nil
+	log.Infof("Registered new node: %s", w.Instance)
+	return nil
 }
 
+// Remove a watcher node from the list of registered nodes
 func (n *Nodes) Remove(instanceID string) error {
 	defer n.mux.Unlock()
 	n.mux.Lock()
@@ -98,16 +106,18 @@ func (n *Nodes) Remove(instanceID string) error {
 			lastElm := lenList - 1
 			n.List[x] = n.List[lastElm]
 			n.List = n.List[:lastElm]
+			log.Debugf("Removed %s from instance list", instanceID)
 			return nil
 		}
 	}
 	return fmt.Errorf("no node with instance ID: %s", instanceID)
 }
 
+// FetchAllFiles returns a map containing a list of all node file lists concatenated
 func (n *Nodes) FetchAllFiles() map[string][]lib.FileMetadata {
 	defer n.mux.RUnlock()
 	n.mux.RLock()
-	// make is used here due to needing the base map to != nil to reference the files key
+	// make is used here instead of nil map due to needing the base map to != nil to reference the files key
 	files := make(map[string][]lib.FileMetadata)
 	files["files"] = make([]lib.FileMetadata, 0)
 

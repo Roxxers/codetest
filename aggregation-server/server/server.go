@@ -24,8 +24,8 @@ func parseRemoteAddr(addr string) string {
 	return fixedAddr
 }
 
+// TODO: Maybe add more to this?????
 func getFiles(c *gin.Context) {
-
 	c.JSON(200, nodes.FetchAllFiles())
 }
 
@@ -37,15 +37,16 @@ func registerNode(c *gin.Context) {
 	// Error here means we don't have instance stored, so add it to the list
 	if _, err := nodes.Find(intro.Instance); err != nil {
 		watcherAddr := parseRemoteAddr(c.Request.RemoteAddr)
-		node, err := nodes.New(intro.Instance, watcherAddr, intro.Port)
-		if err != nil {
-			log.Error(err)
+		if err := nodes.New(intro.Instance, watcherAddr, intro.Port); err != nil {
+			c.Status(500)
+			return
 		}
-		log.Infof("Registered new node: %s", node.Instance)
+		// No error, therefore added successfully.
 		c.Status(200)
 		return
 	}
-	log.Debugf("Seen already registered node: %s", intro.Instance)
+	// 200 here as there is nothing to do but not returning 200 creates a debug output in watcher node
+	// Really should be using something like 204
 	c.Status(200)
 	return
 }
