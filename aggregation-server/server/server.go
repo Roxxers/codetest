@@ -48,6 +48,7 @@ func registerNode(c *gin.Context) {
 	// 200 here as there is nothing to do but not returning 200 creates a debug output in watcher node
 	// Really should be using something like 204
 	c.Status(200)
+	log.Debugf("Seen already registered node: %s", intro.Instance)
 	return
 }
 
