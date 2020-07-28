@@ -46,8 +46,10 @@ func (w *Watcher) PatchList(patches []lib.PatchOperation) error {
 	w.mux.Lock()
 	for _, patch := range patches {
 		// Checking for rare out of order patch
-		if patch.Sequence < w.SeqNo {
-			// Unlock here as ReqFiles will have its own lock
+		// Will request the full list from the node if the patches seem to be out of order.
+		// May repeat a few times if multiple out of order lists return so possible issue there.
+		if patch.Sequence <= w.SeqNo {
+			// Unlock here as ReqFiles has its own lock
 			w.mux.Unlock()
 			return w.ReqFiles()
 		} else if patch.Op == add {
