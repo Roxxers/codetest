@@ -82,7 +82,18 @@ func updateFileList(c *gin.Context) {
 		c.Status(500)
 		return
 	}
-	fmt.Println(patch)
+	node, err := nodes.Find(patch[0].Instance)
+	if err != nil {
+		log.Error(err)
+		c.Status(500)
+		return
+	}
+	if err := node.PatchList(patch); err != nil {
+		log.Error(err)
+		c.Status(500)
+		return
+	}
+
 	c.Status(200)
 	return
 }

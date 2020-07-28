@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -13,6 +14,22 @@ import (
 	"thirdlight.com/watcher-node/lib"
 )
 
+// This has been copied from watcher node as it is in the main package but should be in a shared lib between both programs
+const (
+	add    = "add"
+	remove = "remove"
+)
+
+// removeSliceValue removes the item in the slice at the index provided
+func removeSliceValue(index int, slice []interface{}) []interface{} {
+	lenList := len(slice)
+	// Remove instance by replacing it with the last in slice, then removing last element
+	lastElm := lenList - 1
+	slice[index] = slice[lastElm]
+	slice = slice[:lastElm]
+	return slice
+}
+
 // Watcher represents one node watcher for one directory
 type Watcher struct {
 	Instance string
@@ -23,13 +40,52 @@ type Watcher struct {
 	mux      sync.RWMutex
 }
 
-func (w *Watcher) PatchList(patch lib.PatchOperation) error {
-	// Code here
-	return nil
+// PatchList updates the nodes file list, processing both add and remove operations
+func (w *Watcher) PatchList(patches []lib.PatchOperation) error {
+	defer w.mux.Unlock()
+	w.mux.Lock()
+	for _, patch := range patches {
+		// Checking for rare out of order patch
+		if patch.Sequence < w.SeqNo {
+			// Unlock here as ReqFiles will have its own lock
+			w.mux.Unlock()
+			return w.ReqFiles()
+		} else if patch.Op == add {
+			w.List = append(w.List, patch.Value)
+			log.Infof("Successfully added file [%s] to instance's file list [%s]", patch.Value.Filename, w.Instance)
+			log.Debugln(w.List)
+			return nil
+		} else if patch.Op == remove {
+			// Assumption here is that there is only one file with the same name in the node
+			// This is usually the only legal way in operate in filesystems but good to note
+			for x, file := range w.List {
+				if file.Filename == patch.Value.Filename {
+					lenList := len(w.List)
+					// Remove instance by replacing it with the last in slice, then removing last element
+					lastElm := lenList - 1
+					w.List[x] = w.List[lastElm]
+					w.List = w.List[:lastElm]
+					log.Infof("Successfully removed file [%s] from instance's file list [%s]", patch.Value.Filename, w.Instance)
+					log.Debugln(w.List)
+					return nil
+				}
+			}
+			// Nothing to remove
+			return fmt.Errorf("No file to remove with matching filename: %s", patch.Value.Filename)
+		} else {
+			return fmt.Errorf("unknown PATCH operation: %s", patch.Op)
+		}
+	}
+	// If we are here, no patches in list
+	return errors.New("No patches to apply")
 }
 
 // ReqFiles requests the current file list for the node, and updates the internal list of files.
 func (w *Watcher) ReqFiles() error {
+	// Moved to beginning of the function because of it being used as part of the patch op
+	defer w.mux.Unlock()
+	w.mux.Lock()
+
 	// Get file list
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s%s", w.URL.String(), endpoints.FilesEndpoint), nil)
 	if err != nil {
@@ -46,9 +102,6 @@ func (w *Watcher) ReqFiles() error {
 	if err := json.NewDecoder(resp.Body).Decode(&files); err != nil {
 		return fmt.Errorf("Failed to parse file list of instance: %s @ %s\n%s", w.Instance, w.URL.String(), err)
 	}
-
-	defer w.mux.Unlock()
-	w.mux.Lock()
 	w.List = files.Files
 	w.SeqNo = files.Sequence
 	return nil
