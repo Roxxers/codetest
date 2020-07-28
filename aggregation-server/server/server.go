@@ -32,7 +32,11 @@ func getFiles(c *gin.Context) {
 // registerNode is the endpoint for registering a watcher node with this server
 func registerNode(c *gin.Context) {
 	var intro lib.HelloOperation
-	c.BindJSON(&intro)
+	if err := c.BindJSON(&intro); err != nil {
+		log.Error(err)
+		c.Status(500)
+		return
+	}
 
 	// Error here means we don't have instance stored, so add it to the list
 	if _, err := nodes.Find(intro.Instance); err != nil {
@@ -55,7 +59,11 @@ func registerNode(c *gin.Context) {
 // deregisterNode is the endpoint for removing a watcher node, usually on shutdown of that node, from the server
 func deregisterNode(c *gin.Context) {
 	var bye lib.ByeOperation
-	c.BindJSON(&bye)
+	if err := c.BindJSON(&bye); err != nil {
+		log.Error(err)
+		c.Status(500)
+		return
+	}
 	if err := nodes.Remove(bye.Instance); err != nil {
 		// Error means node doesn't exist
 		log.Debugln(err)
@@ -67,6 +75,18 @@ func deregisterNode(c *gin.Context) {
 	return
 }
 
+func updateFileList(c *gin.Context) {
+	var patch []lib.PatchOperation
+	if err := c.BindJSON(&patch); err != nil {
+		log.Error(err)
+		c.Status(500)
+		return
+	}
+	fmt.Println(patch)
+	c.Status(200)
+	return
+}
+
 // SetupRouter creates the http server and defines all routes with methods.
 func SetupRouter() *gin.Engine {
 	r := gin.Default()
@@ -74,6 +94,7 @@ func SetupRouter() *gin.Engine {
 	r.GET(endpoints.FilesEndpoint, getFiles)
 	r.POST(endpoints.HelloEndpoint, registerNode)
 	r.POST(endpoints.ByeEndpoint, deregisterNode)
+	r.PATCH(endpoints.FilesEndpoint, updateFileList)
 
 	return r
 }
